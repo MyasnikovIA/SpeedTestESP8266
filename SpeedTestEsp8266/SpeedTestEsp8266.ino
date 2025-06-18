@@ -2,8 +2,8 @@
 #include <ESP8266HTTPClient.h>
 #include <WiFiClientSecure.h>
 
-const char* ssid = "XXXXXXXXX";   
-const char* password = "XXXXXXXXXXX";
+const char* ssid = "XXXXXXXXXXXXXXXX";   
+const char* password = "XXXXXXXXX";
 
 unsigned long start_time = 0;
 unsigned long end_time = 0;
@@ -30,7 +30,7 @@ void setup() {
       delay(500);
       Serial.print(".");
   }
-  
+  Serial.println("");
   Serial.println("Connected to WiFi");
   Serial.print("... IP Address: ");
   Serial.print(WiFi.localIP());
@@ -49,8 +49,9 @@ void loop() {
     total_elapsed = 0; 
     client.setInsecure(); // Skip verification
     Serial.print("--------------------\n");
-    // if (https.begin(client,  "https://jwsmythe.com/xfer/esp8266-32-group/1MB_file.bin")) {  // HTTPS
-    if (https.begin(client,  "https://raw.githack.com/MyasnikovIA/SpeedTestESP8266/main/1MB_file.bin")) {  // HTTPS
+    if (https.begin(client,  "https://jwsmythe.com/xfer/esp8266-32-group/1MB_file.bin")) {  // HTTPS
+    // if (https.begin(client,  "https://raw.githack.com/MyasnikovIA/SpeedTestESP8266/main/1MB_file.bin")) {  // HTTPS
+    // if (https.begin(client,  "http://www.smwrap.ru/1MB_file.bin")) {  // HTTPS
         https.setTimeout(15000);
         https.addHeader("Content-Type", "application/json");
         start_time = micros();
@@ -66,10 +67,13 @@ void loop() {
                 total_bytes += response_size;         
                 total_elapsed += chunk_elapsed;       
                 chunk_speed = ((response_size * 8) / 1000.0) / (chunk_elapsed / 1000000.0);
+                Serial.println("RSSI: " + String(WiFi.RSSI()) + " dBm");
                 Serial.print(indQuery);
                 Serial.print(")... Speed ");
                 Serial.print(chunk_speed);
                 Serial.print(" Kb/s\n");
+                //дом - 659.36 Kb
+                //дом - 659.36 Kb
                 if (chunk_speed<200) { // если скорость меньше 200 Kb/s тогда перегружаем  соединение
                     handleToggle();      
                     delay(5000);
@@ -78,7 +82,6 @@ void loop() {
                 }
                 // String payload = https.getString();
                 // Serial.println(payload);
-
              }
          } else {
              indfailedConnection+=1;
@@ -93,11 +96,18 @@ void loop() {
          }
          https.end();
     } else {
+        indfailedConnection+=1;
+        if (indfailedConnection == 4) { // если после 4 запросов интернет не появился, тогда перегружаем соединение
+            handleToggle();      
+            delay(10000);
+            handleToggle();
+            indfailedConnection = 0;
+            indQuery = 0;
+        }
         Serial.printf("[HTTPS] Unable to connect\n");
     }
   }
-  
-  delay(1000); // Wait 5 seconds before next request
+  delay(5000); // Wait 5 seconds before next request
 }
 
 
